@@ -26,7 +26,6 @@ typedef struct {
 //overrides signint and changes condition variable, triggering the thread that prints the status report
 void handle_sigint(int sig) {
     pthread_cond_signal(&condVar);
-    signal(SIGINT, handle_sigint);
     
 }
 
@@ -38,10 +37,8 @@ void *srThread (void *arg) {
 
     sem_getvalue(&s, &val);
     
-    pthread_mutex_lock(&mutex);
-    pthread_cond_wait(&condVar, &mutex);
 
-    do {
+    //do {
         pthread_mutex_lock(&mutex);
         pthread_cond_wait(&condVar, &mutex);
 
@@ -54,7 +51,7 @@ void *srThread (void *arg) {
         pthread_mutex_unlock(&mutex);
         sem_getvalue(&s, &val);
 
-    } while (val == 1);
+    //} while (val == 1);
 }
 
 int main(int argc, char**argv)
@@ -137,7 +134,7 @@ int main(int argc, char**argv)
     pthread_t thread_id;
     pthread_create(&thread_id, NULL, srThread, (void *) repSentArray);
 
-    //sleep(5);
+    //sleep(5);     //For testing only
 
 
     char field[RECORD_FIELD_LENGTH];        //Field for reading in each record
@@ -191,7 +188,9 @@ int main(int argc, char**argv)
                     }
                     else
                         fprintf(stderr,"msgsnd-report_record: record\"%s\" Sent (%d bytes)\n", sbuf.record,(int)buf_length);
+                        pthread_mutex_lock(&mutex);
                         repSentArray[i]++;
+                        pthread_mutex_unlock(&mutex);
             } 
 
         }
@@ -244,9 +243,8 @@ int main(int argc, char**argv)
         printf("Records sent for report index %d: %d\n", k + 1, repSentArray[k]);
     }
     
-    sem_wait(&s);
+    //sem_wait(&s);
     pthread_cond_signal(&condVar);
-    pthread_join(thread_id, NULL);
 
     exit(0);
 }
